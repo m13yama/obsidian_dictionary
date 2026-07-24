@@ -17,7 +17,7 @@ export interface SpellcheckSettings {
 
 export const DEFAULT_SETTINGS: SpellcheckSettings = {
   enabled: true,
-  customDictionaryPath: "_dictionary/custom-words.txt",
+  customDictionaryPath: "_dictionary/custom-words.md",
   ignoreAllCaps: true,
   ignoreCamelCase: false,
   acceptHyphenatedCompounds: true,
@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: SpellcheckSettings = {
 export function sanitizeSettings(
   value: Partial<SpellcheckSettings> | null | undefined,
 ): SpellcheckSettings {
-  const customDictionaryPath = isValidDictionaryPath(value?.customDictionaryPath)
+  const customDictionaryPath = isValidMarkdownDictionaryPath(value?.customDictionaryPath)
     ? normalizePath(value.customDictionaryPath.trim())
     : DEFAULT_SETTINGS.customDictionaryPath;
 
@@ -65,6 +65,10 @@ export function isValidDictionaryPath(value: unknown): value is string {
   return !segments.some((segment) => segment === ".." || segment.length === 0);
 }
 
+export function isValidMarkdownDictionaryPath(value: unknown): value is string {
+  return isValidDictionaryPath(value) && value.trim().toLowerCase().endsWith(".md");
+}
+
 export class SpellcheckSettingTab extends PluginSettingTab {
   constructor(app: App, private readonly plugin: VaultSpellcheckPlugin) {
     super(app, plugin);
@@ -88,15 +92,15 @@ export class SpellcheckSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Custom dictionary file")
       .setDesc(
-        "Vault-relative text file containing one accepted word per line. Keep it outside hidden folders for reliable syncing.",
+        "Vault-relative Markdown file containing one accepted word per line. Keep it outside hidden folders for reliable syncing.",
       )
       .addText((text) => {
         text.setValue(this.plugin.settings.customDictionaryPath);
         text.inputEl.addEventListener("change", () => {
           const value = text.getValue();
-          if (!isValidDictionaryPath(value)) {
+          if (!isValidMarkdownDictionaryPath(value)) {
             text.setValue(this.plugin.settings.customDictionaryPath);
-            new Notice("Enter a valid path relative to the vault.");
+            new Notice("Enter a valid Markdown (.md) path relative to the vault.");
             return;
           }
 

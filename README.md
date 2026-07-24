@@ -8,13 +8,13 @@ Vault Spellcheck is an English spellchecker for Obsidian with a custom dictionar
 - Wavy underlines for misspellings in Source mode and Live Preview.
 - Up to five correction suggestions in the editor context menu.
 - Add a word, remove a word, or ignore it for the current session.
-- One-word-per-line custom dictionary stored at `_dictionary/custom-words.txt` by default.
+- One-word-per-line custom dictionary stored at `_dictionary/custom-words.md` by default, so it can be edited directly in Obsidian.
 - Automatic reload when a sync tool modifies the custom dictionary.
 - Desktop and mobile support without Node.js or Electron APIs at runtime.
 
 ## Usage
 
-After enabling the plugin, misspelled English words in visible editor text are underlined. The word currently being typed is not underlined until the cursor moves away.
+After enabling the plugin, misspelled English words in visible editor text are underlined. The underline remains visible while the word is selected or edited.
 
 Right-click a misspelled word to replace it with a suggestion, add it to the custom dictionary, or ignore it for the current session. On mobile, use the command palette:
 
@@ -23,7 +23,7 @@ Right-click a misspelled word to replace it with a suggestion, add it to the cus
 - **Reload custom dictionary**
 - **Toggle spellcheck**
 
-The custom dictionary is a UTF-8 text file containing one word per line. Blank lines and lines beginning with `#` are ignored. Apostrophes and hyphenated words are supported.
+The custom dictionary is a UTF-8 Markdown file containing one word per line. Blank lines and lines beginning with `#` are ignored. Apostrophes and hyphenated words are supported.
 
 ```text
 # Project terms

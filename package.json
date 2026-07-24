@@ -1,6 +1,6 @@
 {
   "name": "vault-spellcheck",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An English spellchecker for Obsidian with a vault-synced custom dictionary.",
   "type": "module",
   "main": "main.js",

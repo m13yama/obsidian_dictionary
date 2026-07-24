@@ -59,12 +59,7 @@ export function createSpellcheckExtension({
       }
 
       update(update: ViewUpdate): void {
-        if (
-          update.docChanged ||
-          update.viewportChanged ||
-          update.selectionSet ||
-          update.focusChanged
-        ) {
+        if (update.docChanged || update.viewportChanged) {
           this.decorations = buildDecorations(
             update.view,
             dictionary,
@@ -90,9 +85,6 @@ function buildDecorations(
 
   const builder = new RangeSetBuilder<Decoration>();
   const visibleRanges = expandedVisibleRanges(view);
-  const cursorPositions = view.hasFocus
-    ? view.state.selection.ranges.map((range) => range.head)
-    : [];
 
   for (const visibleRange of visibleRanges) {
     const text = view.state.doc.sliceString(visibleRange.from, visibleRange.to);
@@ -100,7 +92,6 @@ function buildDecorations(
 
     for (const word of findEnglishWords(text, visibleRange.from)) {
       if (
-        touchesCursor(word, cursorPositions) ||
         overlapsAny(word, textExclusions) ||
         isExcludedBySyntax(view, word.from)
       ) {
@@ -170,10 +161,6 @@ function isExcludedBySyntax(view: EditorView, position: number): boolean {
     node = node.parent;
   }
   return false;
-}
-
-function touchesCursor(word: TextRange, cursors: readonly number[]): boolean {
-  return cursors.some((cursor) => word.from <= cursor && cursor <= word.to);
 }
 
 function overlapsAny(word: TextRange, exclusions: readonly TextRange[]): boolean {
