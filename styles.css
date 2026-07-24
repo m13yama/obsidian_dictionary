@@ -1,0 +1,7 @@
+.vault-spellcheck-error {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--text-error);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
