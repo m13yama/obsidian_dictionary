@@ -18,7 +18,7 @@ export function parseCustomDictionary(contents: string): Set<string> {
   return words;
 }
 
-export function appendDictionaryWord(contents: string, word: string): string {
+export function addDictionaryWord(contents: string, word: string): string {
   const normalized = normalizeWord(word);
   if (!isDictionaryWord(normalized)) {
     throw new Error("Custom dictionary entries must be English words.");
@@ -28,12 +28,26 @@ export function appendDictionaryWord(contents: string, word: string): string {
     return contents;
   }
 
-  if (contents.length === 0) {
-    return `${normalized}\n`;
+  const bom = contents.startsWith("\uFEFF") ? "\uFEFF" : "";
+  const lineEnding = contents.includes("\r\n") ? "\r\n" : "\n";
+  const lines = contents.slice(bom.length).split(/\r?\n/);
+  if (lines.at(-1) === "") {
+    lines.pop();
   }
+  lines.push(normalized);
 
-  const separator = contents.endsWith("\n") ? "" : "\n";
-  return `${contents}${separator}${normalized}\n`;
+  const sortedWords = lines.filter(isDictionaryWord).sort((left, right) => {
+    const leftKey = normalizeWord(left).toLowerCase();
+    const rightKey = normalizeWord(right).toLowerCase();
+    return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+  });
+
+  // Replace only word lines so comments, blank lines, and other text stay put.
+  let wordIndex = 0;
+  const sortedLines = lines.map((line) =>
+    isDictionaryWord(line) ? sortedWords[wordIndex++] : line,
+  );
+  return `${bom}${sortedLines.join(lineEnding)}${lineEnding}`;
 }
 
 export function removeDictionaryWord(contents: string, word: string): string {

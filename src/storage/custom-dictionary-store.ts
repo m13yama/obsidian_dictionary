@@ -1,6 +1,6 @@
 import { TFile, TFolder, Vault, normalizePath } from "obsidian";
 import {
-  appendDictionaryWord,
+  addDictionaryWord,
   parseCustomDictionary,
   removeDictionaryWord,
 } from "./dictionary-format";
@@ -24,7 +24,7 @@ export class CustomDictionaryStore {
     const file = await this.ensureFile();
     let changed = false;
     await this.vault.process(file, (contents) => {
-      const updated = appendDictionaryWord(contents, word);
+      const updated = addDictionaryWord(contents, word);
       changed = updated !== contents;
       return updated;
     });
