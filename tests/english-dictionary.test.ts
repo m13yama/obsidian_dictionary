@@ -17,5 +17,8 @@ describe("bundled US English dictionary source", () => {
     expect(checker.correct("OpenAI")).toBe(false);
     checker.add("OpenAI");
     expect(checker.correct("OpenAI")).toBe(true);
+    expect(checker.correct("Node.js")).toBe(false);
+    checker.add("Node.js");
+    expect(checker.correct("Node.js")).toBe(true);
   });
 });

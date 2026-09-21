@@ -19,6 +19,12 @@ describe("document misspellings", () => {
       .toEqual(["wrng", "wrng"]);
   });
 
+  it("checks dotted terms as whole words while still excluding URLs and emails", () => {
+    expect(findMisspellings(
+      "Node.js. https://Node.js user@Node.js", 0, Tree.empty, dictionary, settings,
+    )).toEqual([{ word: "Node.js", from: 0, to: 7 }]);
+  });
+
   it("uses syntax exclusions and preserves absolute offsets", () => {
     const root = NodeType.define({ id: 0, name: "Document", top: true });
     const code = NodeType.define({ id: 1, name: "InlineCode" });

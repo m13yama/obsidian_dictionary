@@ -1,7 +1,7 @@
 {
   "id": "vault-spellcheck",
   "name": "Vault Spellcheck",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "minAppVersion": "1.5.0",
   "description": "Checks English spelling with a custom dictionary stored and synced inside your vault.",
   "author": "Yuki",

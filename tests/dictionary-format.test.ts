@@ -97,3 +97,13 @@ describe("addDictionaryWords", () => {
     expect(() => addDictionaryWords("", ["valid", "two words"])).toThrow();
   });
 });
+
+describe("dotted dictionary entries", () => {
+  it("loads, sorts, deduplicates, and removes dotted words", () => {
+    const updated = addDictionaryWords("# Terms\nZebra\n", ["Node.js", "Next.js", "Node.js"]);
+    expect(updated).toEqual({ contents: "# Terms\nNext.js\nNode.js\nZebra\n", added: 2 });
+    expect([...parseCustomDictionary(updated.contents)]).toEqual(["Next.js", "Node.js", "Zebra"]);
+    expect(addDictionaryWord(updated.contents, "Node.js")).toBe(updated.contents);
+    expect(removeDictionaryWord(updated.contents, "Node.js")).toBe("# Terms\nNext.js\nZebra\n");
+  });
+});

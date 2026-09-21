@@ -4,7 +4,7 @@ export interface WordRange {
   to: number;
 }
 
-const WORD_SOURCE = "[A-Za-z]+(?:['’][A-Za-z]+)*(?:-[A-Za-z]+(?:['’][A-Za-z]+)*)*";
+const WORD_SOURCE = "[A-Za-z]+(?:['’][A-Za-z]+)*(?:[.-][A-Za-z]+(?:['’][A-Za-z]+)*)*";
 const VALID_WORD = new RegExp(`^${WORD_SOURCE}$`);
 
 export function findEnglishWords(text: string, baseOffset = 0): WordRange[] {
