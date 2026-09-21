@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addDictionaryWord,
+  addDictionaryWords,
   parseCustomDictionary,
   removeDictionaryWord,
 } from "../src/storage/dictionary-format";
@@ -77,5 +78,22 @@ describe("removeDictionaryWord", () => {
     expect(removeDictionaryWord("# Terms\nOpenAI\nCodex\n", "OpenAI")).toBe(
       "# Terms\nCodex\n",
     );
+  });
+});
+
+describe("addDictionaryWords", () => {
+  it("sorts distinct normalized additions while preserving comments", () => {
+    expect(addDictionaryWords("# Terms\nOpenAI", ["OpenAI", "it’s", "it's", "Codex"]))
+      .toEqual({ contents: "# Terms\nCodex\nit's\nOpenAI\n", added: 2 });
+  });
+
+  it("leaves content unchanged when no new words are supplied", () => {
+    expect(addDictionaryWords("OpenAI", ["OpenAI"]))
+      .toEqual({ contents: "OpenAI", added: 0 });
+    expect(addDictionaryWords("", [])).toEqual({ contents: "", added: 0 });
+  });
+
+  it("rejects a batch containing an invalid entry", () => {
+    expect(() => addDictionaryWords("", ["valid", "two words"])).toThrow();
   });
 });

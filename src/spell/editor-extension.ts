@@ -1,6 +1,6 @@
-import { syntaxTree } from "@codemirror/language";
+import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder, type Extension } from "@codemirror/state";
-import type { SyntaxNode } from "@lezer/common";
+import type { SyntaxNode, Tree } from "@lezer/common";
 import {
   Decoration,
   type DecorationSet,
@@ -10,7 +10,7 @@ import {
 } from "@codemirror/view";
 import type { SpellcheckSettings } from "../settings";
 import type { DictionaryService } from "./dictionary-service";
-import { findEnglishWords } from "./tokenizer";
+import { findEnglishWords, type WordRange } from "./tokenizer";
 
 interface TextRange {
   from: number;
@@ -20,6 +20,8 @@ interface TextRange {
 interface SpellcheckExtensionOptions {
   dictionary: DictionaryService;
   getSettings: () => SpellcheckSettings;
+  registerView?: (view: EditorView) => void;
+  unregisterView?: (view: EditorView) => void;
 }
 
 const EXCLUDED_SYNTAX_NAMES = [
@@ -49,13 +51,20 @@ const TEXT_EXCLUSION_PATTERNS = [
 export function createSpellcheckExtension({
   dictionary,
   getSettings,
+  registerView,
+  unregisterView,
 }: SpellcheckExtensionOptions): Extension {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
 
-      constructor(view: EditorView) {
+      constructor(private readonly view: EditorView) {
+        registerView?.(view);
         this.decorations = buildDecorations(view, dictionary, getSettings());
+      }
+
+      destroy(): void {
+        unregisterView?.(this.view);
       }
 
       update(update: ViewUpdate): void {
@@ -87,21 +96,13 @@ function buildDecorations(
   const visibleRanges = expandedVisibleRanges(view);
 
   for (const visibleRange of visibleRanges) {
-    const text = view.state.doc.sliceString(visibleRange.from, visibleRange.to);
-    const textExclusions = collectTextExclusions(text, visibleRange.from);
-
-    for (const word of findEnglishWords(text, visibleRange.from)) {
-      if (
-        overlapsAny(word, textExclusions) ||
-        isExcludedBySyntax(view, word.from)
-      ) {
-        continue;
-      }
-
-      if (dictionary.isCorrect(word.word, settings)) {
-        continue;
-      }
-
+    for (const word of findMisspellings(
+      view.state.doc.sliceString(visibleRange.from, visibleRange.to),
+      visibleRange.from,
+      syntaxTree(view.state),
+      dictionary,
+      settings,
+    )) {
       builder.add(
         word.from,
         word.to,
@@ -151,8 +152,8 @@ function collectTextExclusions(text: string, baseOffset: number): TextRange[] {
   return ranges.sort((left, right) => left.from - right.from || left.to - right.to);
 }
 
-function isExcludedBySyntax(view: EditorView, position: number): boolean {
-  let node: SyntaxNode | null = syntaxTree(view.state).resolveInner(position, 1);
+function isExcludedBySyntax(tree: Tree, position: number): boolean {
+  let node: SyntaxNode | null = tree.resolveInner(position, 1);
   while (node !== null) {
     const normalizedName = node.type.name.toLowerCase().replace(/[-_]/g, "");
     if (EXCLUDED_SYNTAX_NAMES.some((name) => normalizedName.includes(name))) {
@@ -166,5 +167,36 @@ function isExcludedBySyntax(view: EditorView, position: number): boolean {
 function overlapsAny(word: TextRange, exclusions: readonly TextRange[]): boolean {
   return exclusions.some(
     (excluded) => word.from < excluded.to && word.to > excluded.from,
+  );
+}
+
+export function collectDocumentMisspellings(
+  view: EditorView,
+  dictionary: Pick<DictionaryService, "isCorrect">,
+  settings: SpellcheckSettings,
+): string[] {
+  if (!settings.enabled) return [];
+  const tree = ensureSyntaxTree(view.state, view.state.doc.length, 1000);
+  if (tree === null) {
+    throw new Error("The document is still being parsed. Try the command again.");
+  }
+  return [...new Set(findMisspellings(
+    view.state.doc.toString(), 0, tree, dictionary, settings,
+  ).map((word) => word.word))];
+}
+
+export function findMisspellings(
+  text: string,
+  baseOffset: number,
+  tree: Tree,
+  dictionary: Pick<DictionaryService, "isCorrect">,
+  settings: SpellcheckSettings,
+): WordRange[] {
+  if (!settings.enabled) return [];
+  const exclusions = collectTextExclusions(text, baseOffset);
+  return findEnglishWords(text, baseOffset).filter((word) =>
+    !overlapsAny(word, exclusions) &&
+    !isExcludedBySyntax(tree, word.from) &&
+    !dictionary.isCorrect(word.word, settings),
   );
 }

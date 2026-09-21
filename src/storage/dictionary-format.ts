@@ -19,13 +19,27 @@ export function parseCustomDictionary(contents: string): Set<string> {
 }
 
 export function addDictionaryWord(contents: string, word: string): string {
-  const normalized = normalizeWord(word);
-  if (!isDictionaryWord(normalized)) {
-    throw new Error("Custom dictionary entries must be English words.");
-  }
+  return addDictionaryWords(contents, [word]).contents;
+}
 
-  if (parseCustomDictionary(contents).has(normalized)) {
-    return contents;
+export function addDictionaryWords(
+  contents: string,
+  words: Iterable<string>,
+): { contents: string; added: number } {
+  const existing = parseCustomDictionary(contents);
+  const additions: string[] = [];
+  for (const word of words) {
+    const normalized = normalizeWord(word);
+    if (!isDictionaryWord(normalized)) {
+      throw new Error("Custom dictionary entries must be English words.");
+    }
+    if (!existing.has(normalized)) {
+      existing.add(normalized);
+      additions.push(normalized);
+    }
+  }
+  if (additions.length === 0) {
+    return { contents, added: 0 };
   }
 
   const bom = contents.startsWith("\uFEFF") ? "\uFEFF" : "";
@@ -34,7 +48,7 @@ export function addDictionaryWord(contents: string, word: string): string {
   if (lines.at(-1) === "") {
     lines.pop();
   }
-  lines.push(normalized);
+  lines.push(...additions);
 
   const sortedWords = lines.filter(isDictionaryWord).sort((left, right) => {
     const leftKey = normalizeWord(left).toLowerCase();
@@ -47,7 +61,7 @@ export function addDictionaryWord(contents: string, word: string): string {
   const sortedLines = lines.map((line) =>
     isDictionaryWord(line) ? sortedWords[wordIndex++] : line,
   );
-  return `${bom}${sortedLines.join(lineEnding)}${lineEnding}`;
+  return { contents: `${bom}${sortedLines.join(lineEnding)}${lineEnding}`, added: additions.length };
 }
 
 export function removeDictionaryWord(contents: string, word: string): string {

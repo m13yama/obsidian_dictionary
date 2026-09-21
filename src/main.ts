@@ -1,12 +1,14 @@
+import type { EditorView } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
 import {
   Editor,
+  editorInfoField,
   Menu,
   Notice,
   Plugin,
   type TAbstractFile,
 } from "obsidian";
-import { createSpellcheckExtension } from "./spell/editor-extension";
+import { collectDocumentMisspellings, createSpellcheckExtension } from "./spell/editor-extension";
 import { DictionaryService } from "./spell/dictionary-service";
 import { wordAtOffset, type WordRange } from "./spell/tokenizer";
 import {
@@ -20,6 +22,7 @@ import { CustomDictionaryStore } from "./storage/custom-dictionary-store";
 export default class VaultSpellcheckPlugin extends Plugin {
   settings: SpellcheckSettings = DEFAULT_SETTINGS;
 
+  private readonly editorViews = new Set<EditorView>();
   private dictionary!: DictionaryService;
   private dictionaryStore!: CustomDictionaryStore;
   private readonly editorExtensions: Extension[] = [];
@@ -109,6 +112,8 @@ export default class VaultSpellcheckPlugin extends Plugin {
       createSpellcheckExtension({
         dictionary: this.dictionary,
         getSettings: () => this.settings,
+        registerView: (view) => { this.editorViews.add(view); },
+        unregisterView: (view) => { this.editorViews.delete(view); },
       }),
     );
   }
@@ -121,6 +126,14 @@ export default class VaultSpellcheckPlugin extends Plugin {
   }
 
   private registerCommands(): void {
+    this.addCommand({
+      id: "add-all-highlighted-words",
+      name: "Add all highlighted words in current document to custom dictionary",
+      editorCallback: (editor) => {
+        void this.addHighlightedWords(editor);
+      },
+    });
+
     this.addCommand({
       id: "add-word-under-cursor",
       name: "Add word under cursor to custom dictionary",
@@ -264,6 +277,32 @@ export default class VaultSpellcheckPlugin extends Plugin {
       this.reloadTimer = null;
       void this.reloadCustomDictionary(false);
     }, 300);
+  }
+
+  private async addHighlightedWords(editor: Editor): Promise<void> {
+    try {
+      if (!this.settings.enabled) {
+        new Notice("Enable spellcheck first to highlight misspelled words.");
+        return;
+      }
+      const view = [...this.editorViews].find(
+        (candidate) => candidate.state.field(editorInfoField, false)?.editor === editor,
+      );
+      if (view === undefined) {
+        new Notice("Open the document in Source mode or Live Preview first.");
+        return;
+      }
+      const words = collectDocumentMisspellings(view, this.dictionary, this.settings);
+      if (words.length === 0) {
+        new Notice("No highlighted words found in the current document.");
+        return;
+      }
+      const added = await this.dictionaryStore.addWords(words);
+      await this.reloadCustomDictionary(false);
+      new Notice(`Added ${added} ${added === 1 ? "word" : "words"} to the custom dictionary.`);
+    } catch (error) {
+      this.reportError("Could not add highlighted words", error);
+    }
   }
 
   private async addCustomWord(word: string): Promise<void> {

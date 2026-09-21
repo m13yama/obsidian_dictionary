@@ -20,9 +20,12 @@ After enabling the plugin, misspelled English words in visible editor text are u
 Right-click a misspelled word to replace it with a suggestion, add it to the custom dictionary, or ignore it for the current session. On mobile, use the command palette:
 
 - **Add word under cursor to custom dictionary**
+- **Add all highlighted words in current document to custom dictionary**
 - **Remove word under cursor from custom dictionary**
 - **Reload custom dictionary**
 - **Toggle spellcheck**
+
+The bulk-add command adds all words marked as misspelled by this plugin throughout the current document, including text outside the visible area. It respects the spellcheck settings and skipped regions, saves duplicate words only once, and reports how many words were added. Use it in Source mode or Live Preview with spellcheck enabled.
 
 The custom dictionary is a UTF-8 Markdown file containing one word per line. Blank lines and lines beginning with `#` are ignored. Apostrophes and hyphenated words are supported. Adding a new word sorts all word entries alphabetically, ignoring case while preserving their capitalization. Comments, blank lines, and other non-word lines stay in place. Adding an existing word leaves the file unchanged.
 
